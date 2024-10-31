@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql-account:3309/account_db
+    username: account_user
+    password: account_password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  server:
+    port: 8082
+  springdoc:
+    api-docs:
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+  launch:
+    service:
+      url: http://launch_service:8081/api

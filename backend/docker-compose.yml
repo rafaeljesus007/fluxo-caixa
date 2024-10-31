@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0.33
+    container_name: mysql_category_service
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: category_db
+      MYSQL_USER: category_user
+      MYSQL_PASSWORD: category_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - category_db_data:/var/lib/mysql
+    networks:
+      - category_network
+
+  service-category:
+    build:
+      context: ./services/service-category  # caminho relativo para o Dockerfile do microserviço de categoria
+      dockerfile: Dockerfile
+    container_name: category_service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/category_db
+      SPRING_DATASOURCE_USERNAME: category_user
+      SPRING_DATASOURCE_PASSWORD: category_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"  # porta para expor o serviço de categoria
+    depends_on:
+      - mysql
+    networks:
+      - category_network
+
+  mysql-launch:
+    image: mysql:8.0.33
+    container_name: mysql_launch_service
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: launch_db
+      MYSQL_USER: launch_user
+      MYSQL_PASSWORD: launch_password
+    ports:
+      - "3307:3306"  # porta do banco de dados de lançamentos
+    volumes:
+      - launch_db_data:/var/lib/mysql
+    networks:
+      - launch_network
+      - shared_network
+
+  service-launch:
+    build:
+      context: ./services/service-launch  # caminho relativo para o Dockerfile do microserviço de lançamentos
+      dockerfile: Dockerfile
+    container_name: launch_service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-launch:3306/launch_db
+      SPRING_DATASOURCE_USERNAME: launch_user
+      SPRING_DATASOURCE_PASSWORD: launch_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8081:8080"  # porta para expor o serviço de lançamentos
+    depends_on:
+      - mysql-launch
+    networks:
+      - launch_network
+      - shared_network
+
+  mysql-account:
+    image: mysql:8.0.33
+    container_name: mysql_account_service
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: account_db
+      MYSQL_USER: account_user
+      MYSQL_PASSWORD: account_password
+    ports:
+      - "3309:3306"  # porta do banco de dados de contas
+    volumes:
+      - account_db_data:/var/lib/mysql
+    networks:
+      - account_network
+      - shared_network
+
+  service-account:
+    build:
+      context: ./services/service-account  # caminho relativo para o Dockerfile do microserviço de contas
+      dockerfile: Dockerfile
+    container_name: account_service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-account:3306/account_db
+      SPRING_DATASOURCE_USERNAME: account_user
+      SPRING_DATASOURCE_PASSWORD: account_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      LAUNCH_SERVICE_URL: http://launch_service:8081  # URL para acessar o serviço de lançamentos
+    ports:
+      - "8082:8080"  # porta para expor o serviço de contas
+    depends_on:
+      - mysql-account
+      - service-launch  # Define dependência para assegurar que o serviço de lançamentos esteja disponível
+    networks:
+      - account_network
+      - shared_network
+
+volumes:
+  category_db_data:
+  launch_db_data:
+  account_db_data:
+
+networks:
+  category_network:
+    driver: bridge
+  launch_network:
+    driver: bridge
+  account_network:
+    driver: bridge
+  shared_network:
+    driver: bridge
